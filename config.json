@@ -1,0 +1,29 @@
+{
+  "discord_client_id": "YOUR_DISCORD_CLIENT_ID",
+  "update_interval_seconds": 5,
+  "privacy": {
+    "prefer_ui_label": true,
+    "expose_ip_in_presence": false,
+    "allow_reverse_dns": false
+  },
+  "assets": {
+    "large_image": "termius",
+    "large_text": "Termius SSH Client",
+    "small_image": "ssh_icon"
+  },
+  "texts": {
+    "details_connected": "Connected via Termius",
+    "details_hosts": "Termius Hosts",
+    "details_settings": "Termius Settings",
+    "details_snippets": "Termius Snippets",
+    "details_logs": "Termius Logs",
+    "state_sftp": "Browsing in SFTP",
+    "state_browsing": "Browsing for servers",
+    "state_settings": "Viewing settings",
+    "state_snippets": "Viewing Snippets",
+    "state_logs": "Viewing logs",
+    "state_idle": "Idle in Termius",
+    "state_active_ssh": "Active SSH session",
+    "details_idle": "No active connections"
+  }
+}
