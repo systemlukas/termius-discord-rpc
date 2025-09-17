@@ -29,10 +29,18 @@ def _is_generic_label(text: str) -> bool:
     t = (text or '').strip().lower()
     if not t:
         return True
+    # Common generic UI words plus popular desktop app names that should never
+    # be interpreted as a host label (e.g., when another app name leaks into
+    # UI Automation tree, such as Opera/Chrome/Edge/Firefox, etc.).
     generic = {
         'termius', 'live', 'close', 'minimize', 'maximize', 'settings', 'search',
         'new tab', 'new host', 'sftp', 'files', 'terminal', 'ssh', 'hosts', 'groups',
-        'local', 'actions', 'filter', 'root'
+        'local', 'actions', 'filter', 'root',
+        # Common app/browser names
+        'opera', 'google chrome', 'chrome', 'microsoft edge', 'edge', 'firefox',
+        'mozila firefox', 'vivaldi', 'brave', 'safari', 'steam', 'discord', 'spotify',
+        'notepad', 'notepad++', 'visual studio code', 'code', 'vscode', 'explorer',
+        'task manager', 'powershell', 'command prompt', 'cmd', 'terminal', 'windows terminal'
     }
     return t in generic
 
@@ -244,7 +252,12 @@ def _get_active_session_via_ui() -> Optional[Dict[str, str]]:
                 'Termius', 'LIVE', 'Close', 'Minimize', 'Maximize',
                 'Settings', 'Search', 'New Tab', 'New Host',
                 'SFTP', 'Files', 'Terminal', 'SSH', 'Hosts', 'Groups',
-                'Local', 'Actions', 'Filter', 'root'
+                'Local', 'Actions', 'Filter', 'root',
+                # Common app/browser names to ignore in UI tree
+                'Opera', 'Google Chrome', 'Chrome', 'Microsoft Edge', 'Edge', 'Firefox',
+                'Vivaldi', 'Brave', 'Safari', 'Steam', 'Discord', 'Spotify', 'Notepad',
+                'Notepad++', 'Visual Studio Code', 'Code', 'VSCode', 'Explorer',
+                'Task Manager', 'PowerShell', 'Command Prompt', 'CMD', 'Windows Terminal'
             }
 
             candidate_host = ''
@@ -259,7 +272,14 @@ def _get_active_session_via_ui() -> Optional[Dict[str, str]]:
                 
                     if any(ch.isalpha() for ch in name) and len(name) <= 60:
                         lowname = name.lower()
-                        if not any(k in lowname for k in ('sftp', 'files', 'terminal', 'ssh', 'settings', 'hosts', 'groups', 'local', 'actions', 'filter', 'root')):
+                        if not any(k in lowname for k in (
+                            'sftp', 'files', 'terminal', 'ssh', 'settings', 'hosts', 'groups',
+                            'local', 'actions', 'filter', 'root', 'opera', 'chrome', 'google chrome',
+                            'edge', 'microsoft edge', 'firefox', 'vivaldi', 'brave', 'safari', 'steam',
+                            'discord', 'spotify', 'notepad', 'notepad++', 'visual studio code', 'code',
+                            'vscode', 'explorer', 'task manager', 'powershell', 'command prompt', 'cmd',
+                            'windows terminal'
+                        )):
                             candidate_host = name
                 
                         try:
