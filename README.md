@@ -1,93 +1,78 @@
 # Termius Discord Rich Presence
 
-Privacy-first Discord Rich Presence for Termius, with smart UI detection and easy configuration.
+Privacy-first Discord Rich Presence for Termius. Native apps for macOS, Windows, and Linux.
 
-## What it does
+## Features
 
-- Shows Termius status and updates your Discord presence automatically
-- SSH sessions: displays `SSH to <host>` (never shows raw IPs unless you enable it)
-- Non-SSH views with clear text:
-  - SFTP: `Browsing in SFTP`
-  - Hosts list: `Browsing for servers`
-  - Settings / Keychain / Port Forwarding / Known Hosts: `Viewing settings`
-  - Snippets: `Viewing Snippets`
-  - Logs: `Viewing logs`
+- Shows your Termius activity in Discord automatically
+- **SSH sessions**: displays `SSH to <host>` (never shows raw IPs)
+- **SFTP**: displays `Browsing in SFTP`
+- **Idle**: shows when Termius is open but inactive
 - Clears presence when Termius is closed
+- System tray app with settings GUI
+- Zero setup: download, run, done
 
-## Prerequisites
-- Python 3.8+
-- Discord desktop app running
-- Termius installed
-- Windows: UI detection uses `uiautomation` (already in `requirements.txt`)
+## Download
 
-## Install
-1. Clone or download this repository
-2. Install deps:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Create a Discord Application and upload Rich Presence assets:
-   - [Discord Developer Portal](https://discord.com/developers/applications)
-   - Create an app, copy the Client ID
-   - Under Rich Presence, upload images and name them (e.g. `termius`, `ssh_icon`)
-4. Configure via `config.json` (see below)
+Grab the latest release for your platform from [GitHub Releases](https://github.com/systemlukas/termius-discord-rpc/releases).
 
-## Configuration: `config.json`
-All settings live in `config.json` at the project root. A default was created for you:
-```json
-{
-  "discord_client_id": "1417890882702540911",
-  "update_interval_seconds": 5,
-  "privacy": {
-    "prefer_ui_label": true,
-    "expose_ip_in_presence": false,
-    "allow_reverse_dns": false
-  },
-  "assets": {
-    "large_image": "termius",
-    "large_text": "Termius SSH Client",
-    "small_image": "ssh_icon"
-  },
-  "texts": {
-    "details_connected": "Connected via Termius",
-    "details_hosts": "Termius Hosts",
-    "details_settings": "Termius Settings",
-    "details_snippets": "Termius Snippets",
-    "details_logs": "Termius Logs",
-    "state_sftp": "Browsing in SFTP",
-    "state_browsing": "Browsing for servers",
-    "state_settings": "Viewing settings",
-    "state_snippets": "Viewing Snippets",
-    "state_logs": "Viewing logs",
-    "state_idle": "Idle in Termius",
-    "state_active_ssh": "Active SSH session"
-  }
-}
+| Platform | File | Requirements |
+|----------|------|--------------|
+| macOS | `TermiusRPC-macOS.zip` | macOS 13+ (Ventura) |
+| Windows | Coming soon | Windows 10+ |
+| Linux | Coming soon | Ubuntu 22.04+ |
+
+## macOS
+
+1. Download and unzip `TermiusRPC-macOS.zip`
+2. Move `TermiusRPC.app` to `/Applications`
+3. Double-click to run (right-click > Open on first launch if unsigned)
+4. A terminal icon appears in your menu bar
+
+### Permissions
+
+- **Screen Recording** (macOS 14+): Required to read Termius window titles. Grant in System Settings > Privacy & Security > Screen Recording.
+- Without this permission, the app can only detect if Termius is running (idle/closed), not what you're doing.
+
+### Settings
+
+Click the menu bar icon > Settings to configure:
+- **Start on login**: auto-launch at login
+- **Update interval**: how often to poll (1-60 seconds)
+- **Show hostname**: toggle hostname display in presence
+- **Show SFTP status**: toggle SFTP detection
+
+Config is stored in `~/Library/Application Support/TermiusRPC/config.json`.
+
+## Privacy
+
+- No network calls except local Discord IPC (Unix socket)
+- No telemetry, analytics, or update checks
+- IP addresses are never displayed
+- Hostname display is configurable
+- Window titles are read locally and never transmitted
+
+## Architecture
+
+Three separate native apps sharing a common behavioral spec:
+
+| Platform | Language | UI Framework | Window Detection |
+|----------|----------|-------------|-----------------|
+| macOS | Swift | SwiftUI MenuBarExtra | CGWindowListCopyWindowInfo |
+| Windows | C# / .NET 8 | WPF + NotifyIcon | UIAutomation |
+| Linux | Go | GTK3 + AppIndicator | X11 / Wayland |
+
+## Development
+
+### macOS
+
+```bash
+cd macos
+swift build        # build
+swift test         # run tests (36 tests)
+swift build -c release  # release build
 ```
-- `discord_client_id`: your Discord app Client ID
-- `update_interval_seconds`: how often we update the presence
-- `privacy`: control whether to prefer UI labels and whether IP reverse DNS is allowed
-- `assets`: names must match the images you uploaded in your Discord app
-- `texts`: override any UI string to your own wording
-
-## Usage
-1. Ensure Discord is running
-2. Start the script:
-   ```bash
-   python termius_rpc.py
-   ```
-3. Open Termius and switch tabs — your Discord presence will update every few seconds
-4. Press Ctrl+C to stop
-
-## How detection works (privacy-first)
-- Uses Windows UI Automation to read Termius’ active window/tab names
-- For SSH, confirms there’s a real TCP connection from a Termius process before showing `SSH to ...`
-- Raw IPs are not displayed by default. You can enable reverse DNS if you prefer hostnames where available
-
-## Troubleshooting
-- Presence not updating? Check that the Discord desktop app is running
-- No images? Make sure `assets.large_image` and `assets.small_image` match the names you uploaded in the Discord Developer Portal
-- Wrong wording? Tweak any label in `config.json → texts` and restart the script
 
 ## License
+
 MIT

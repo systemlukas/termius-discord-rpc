@@ -1,0 +1,24 @@
+# Swift
+macos/.build/
+macos/.swiftpm/
+*.xcuserstate
+xcuserdata/
+DerivedData/
+
+# .NET
+windows/bin/
+windows/obj/
+
+# Go
+linux/dist/
+
+# Build artifacts
+dist/
+*.zip
+*.exe
+*.AppImage
+*.dmg
+
+# OS
+.DS_Store
+Thumbs.db
