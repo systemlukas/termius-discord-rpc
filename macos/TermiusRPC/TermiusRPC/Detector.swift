@@ -2,6 +2,9 @@ import AppKit
 import CoreGraphics
 
 final class TermiusDetector {
+    /// Whether we've already shown the permission prompt this session.
+    private var hasPromptedForPermission = false
+
     /// Detect the current Termius state by checking processes and window titles.
     func detect() -> TermiusState {
         guard let app = findTermiusProcess() else {
@@ -9,6 +12,16 @@ final class TermiusDetector {
         }
 
         let title = getWindowTitle(pid: app.processIdentifier)
+
+        // If Termius is running with on-screen windows but we got no titles,
+        // we likely lack Screen Recording permission.
+        if title == nil || title == "" {
+            if !hasPromptedForPermission && hasOnScreenWindows(pid: app.processIdentifier) {
+                hasPromptedForPermission = true
+                promptForScreenRecordingPermission()
+            }
+        }
+
         return TitleParser.parse(title)
     }
 
@@ -34,7 +47,6 @@ final class TermiusDetector {
     }
 
     /// Get the title of the frontmost Termius window using CGWindowList.
-    /// Uses .optionAll to catch windows even when Termius is in the background.
     private func getWindowTitle(pid: pid_t) -> String? {
         guard let windowList = CGWindowListCopyWindowInfo(
             [.optionAll, .excludeDesktopElements],
@@ -43,7 +55,6 @@ final class TermiusDetector {
             return nil
         }
 
-        // Filter to Termius windows on the normal layer (0) with non-empty titles
         let termiusWindows = windowList.filter { info in
             let ownerPID = info[kCGWindowOwnerPID as String] as? pid_t
             let layer = info[kCGWindowLayer as String] as? Int
@@ -68,5 +79,43 @@ final class TermiusDetector {
         }
 
         return termiusWindows.isEmpty ? nil : ""
+    }
+
+    /// Check if Termius has visible windows (even if we can't read their titles).
+    private func hasOnScreenWindows(pid: pid_t) -> Bool {
+        guard let windowList = CGWindowListCopyWindowInfo(
+            [.optionOnScreenOnly, .excludeDesktopElements],
+            kCGNullWindowID
+        ) as? [[String: Any]] else {
+            return false
+        }
+
+        return windowList.contains { info in
+            let ownerPID = info[kCGWindowOwnerPID as String] as? pid_t
+            let layer = info[kCGWindowLayer as String] as? Int
+            return ownerPID == pid && layer == 0
+        }
+    }
+
+    /// Show an alert guiding the user to grant Screen Recording permission.
+    private func promptForScreenRecordingPermission() {
+        DispatchQueue.main.async {
+            let alert = NSAlert()
+            alert.messageText = "Screen Recording Permission Required"
+            alert.informativeText = "TermiusRPC needs Screen Recording access to read Termius window titles and detect your SSH sessions.\n\nPlease enable TermiusRPC in:\nSystem Settings → Privacy & Security → Screen Recording"
+            alert.alertStyle = .warning
+            alert.addButton(withTitle: "Open Settings")
+            alert.addButton(withTitle: "Later")
+
+            NSApp.activate(ignoringOtherApps: true)
+            let response = alert.runModal()
+
+            if response == .alertFirstButtonReturn {
+                // Open Screen Recording settings directly
+                if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture") {
+                    NSWorkspace.shared.open(url)
+                }
+            }
+        }
     }
 }
