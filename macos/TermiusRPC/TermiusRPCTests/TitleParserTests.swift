@@ -63,6 +63,38 @@ final class TitleParserTests: XCTestCase {
         XCTAssertEqual(state, .sftp)
     }
 
+    // MARK: - macOS prefix format ("Termius - <view>")
+
+    func testPrefixFormatSSH() {
+        let state = TitleParser.parse("Termius - Proxmox Host")
+        XCTAssertEqual(state, .ssh(host: "Proxmox Host"))
+    }
+
+    func testPrefixFormatSSHWithUser() {
+        let state = TitleParser.parse("Termius - root@homelab")
+        XCTAssertEqual(state, .ssh(host: "root@homelab"))
+    }
+
+    func testPrefixFormatSFTP() {
+        let state = TitleParser.parse("Termius - SFTP")
+        XCTAssertEqual(state, .sftp)
+    }
+
+    func testPrefixFormatSettings() {
+        let state = TitleParser.parse("Termius - Settings")
+        XCTAssertEqual(state, .idle)
+    }
+
+    func testPrefixFormatHosts() {
+        let state = TitleParser.parse("Termius - Hosts")
+        XCTAssertEqual(state, .idle)
+    }
+
+    func testPrefixFormatIPHidden() {
+        let state = TitleParser.parse("Termius - 192.168.1.50")
+        XCTAssertEqual(state, .ssh(host: ""))
+    }
+
     // MARK: - Idle / generic views
 
     func testTermiusOnly() {

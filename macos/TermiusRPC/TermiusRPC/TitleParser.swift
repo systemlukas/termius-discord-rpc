@@ -18,19 +18,11 @@ enum TitleParser {
         let raw = (title ?? "").trimmingCharacters(in: .whitespaces)
         guard !raw.isEmpty else { return .idle }
 
-        // Extract the meaningful part before " - Termius" suffix
-        let meaningful: String
-        if let dashRange = raw.range(of: " - ", options: .backwards) {
-            let suffix = raw[dashRange.upperBound...].trimmingCharacters(in: .whitespaces).lowercased()
-            if suffix == "termius" {
-                meaningful = String(raw[..<dashRange.lowerBound]).trimmingCharacters(in: .whitespaces)
-            } else {
-                meaningful = raw
-            }
-        } else {
-            meaningful = raw
-        }
-
+        // Extract meaningful part from window title.
+        // Termius uses both formats:
+        //   "Termius - <view>"  (prefix, macOS confirmed)
+        //   "<view> - Termius"  (suffix, Windows)
+        let meaningful = extractMeaningfulPart(raw)
         let lower = meaningful.lowercased()
 
         // Check SFTP first
@@ -48,8 +40,26 @@ enum TitleParser {
         return .ssh(host: host)
     }
 
+    private static func extractMeaningfulPart(_ raw: String) -> String {
+        // Try "Termius - <content>" prefix format first (macOS)
+        if raw.lowercased().hasPrefix("termius - ") {
+            let content = String(raw.dropFirst("Termius - ".count)).trimmingCharacters(in: .whitespaces)
+            if !content.isEmpty { return content }
+        }
+
+        // Try "<content> - Termius" suffix format (Windows)
+        if let dashRange = raw.range(of: " - ", options: .backwards) {
+            let suffix = raw[dashRange.upperBound...].trimmingCharacters(in: .whitespaces).lowercased()
+            if suffix == "termius" {
+                let content = String(raw[..<dashRange.lowerBound]).trimmingCharacters(in: .whitespaces)
+                if !content.isEmpty { return content }
+            }
+        }
+
+        return raw
+    }
+
     private static func sanitizeHost(_ raw: String) -> String {
-        // If the title contains user@host, extract the host part for IP check
         let hostPart: String
         if let atIndex = raw.lastIndex(of: "@") {
             hostPart = String(raw[raw.index(after: atIndex)...])
@@ -57,7 +67,6 @@ enum TitleParser {
             hostPart = raw
         }
 
-        // Hide raw IPs
         if isIPAddress(hostPart) {
             return ""
         }
@@ -70,7 +79,6 @@ enum TitleParser {
         if trimmed.range(of: ipv4Pattern, options: .regularExpression) != nil {
             return true
         }
-        // IPv6: contains at least two colons
         if trimmed.contains(":") && trimmed.range(of: ipv6Pattern, options: .regularExpression) != nil {
             return true
         }
